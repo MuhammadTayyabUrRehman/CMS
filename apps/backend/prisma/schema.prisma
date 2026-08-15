@@ -1,0 +1,204 @@
+// =============================================
+// Ministry of Finance - Complaint Portal
+// Database Schema
+// =============================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------
+// Roles: who can do what
+// ----------------------------
+enum Role {
+  USER
+  ADMIN
+  IT_STAFF
+}
+
+// ----------------------------
+// Finance Division Departments
+// ----------------------------
+enum Department {
+  BUDGET_WING
+  ACCOUNTS_WING
+  EXPENDITURE_WING
+  ECONOMIC_ADVISER_WING
+  INTERNAL_FINANCE_WING
+  DEBT_MANAGEMENT_WING
+  INVESTMENT_WING
+  IT_DEPARTMENT
+  ADMINISTRATION
+  CORPORATE_FINANCE_WING
+}
+
+// ----------------------------
+// Complaint categories, status, contact methods
+// ----------------------------
+enum Category {
+  SOFTWARE_HARDWARE
+  INTERNET
+  E_OFFICE
+  OTHER
+}
+
+enum ContactMethod {
+  PTCL
+  INTERCOMM
+}
+
+enum Status {
+  NEW
+  ACKNOWLEDGED
+  IN_PROGRESS
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+// ----------------------------
+// User Table
+// ----------------------------
+model User {
+  id             String          @id @default(uuid())
+  fullName       String          @db.VarChar(150)
+  employeeId     String          @unique
+  department     Department
+  email          String          @unique @db.VarChar(255)
+  password       String          @db.VarChar(255)
+  phone          String?         @db.VarChar(25)
+  role           Role            @default(USER)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  assignedComplaints  Complaint[]       @relation("AssignedComplaints")
+  submittedComplaints Complaint[]       @relation("SubmittedComplaints")
+  complaintUpdates    ComplaintUpdate[]
+  passwordResets      PasswordReset[]
+
+  @@index([role])
+  @@map("users")
+}
+
+// ----------------------------
+// Complaints Table
+// ----------------------------
+model Complaint {
+  id              String        @id @default(uuid())
+  complaintNumber String        @unique @db.VarChar(30)
+  roomNo          String        @db.VarChar(15)
+  block           String        @db.VarChar(5)
+  rank            Int           @db.SmallInt
+  category        Category
+  contactMethod   ContactMethod
+  contactNumber   String        @db.VarChar(20)
+  description     String        @db.Text
+  priorityLevel   Int           @db.SmallInt
+  status          Status        @default(NEW)
+  submittedAt     DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  timerExpiresAt  DateTime?
+  assignedToId    String?
+  technicianName  String?       @db.VarChar(150)
+  dispatchTime    DateTime?
+  submittedById   String?
+  trackingToken   String?       @unique @db.VarChar(64)
+
+  assignedTo    User?             @relation("AssignedComplaints", fields: [assignedToId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  submittedBy   User?             @relation("SubmittedComplaints", fields: [submittedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  updates       ComplaintUpdate[]
+  notifications Notification[]
+
+  @@index([status])
+  @@index([rank])
+  @@index([submittedAt])
+  @@index([assignedToId])
+  @@index([category])
+  @@index([timerExpiresAt])
+  @@index([rank, submittedAt])
+  @@index([priorityLevel, status, submittedAt])
+  @@index([submittedById])
+  @@map("complaints")
+}
+
+// ----------------------------
+// Complaint updates
+// ----------------------------
+model ComplaintUpdate {
+  id           String   @id @default(uuid())
+  complaintId  String
+  handledById  String?
+  status       Status
+  comment      String?  @db.Text
+  updateDate   DateTime @default(now())
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  handledBy User?     @relation(fields: [handledById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([complaintId])
+  @@index([handledById])
+  @@index([updateDate])
+  @@map("complaint_updates")
+}
+
+// ----------------------------
+// Notifications
+// ----------------------------
+model Notification {
+  id            String   @id @default(uuid())
+  complaintId   String
+  recipientType String   @db.VarChar(30)
+  message       String   @db.Text
+  isRead        Boolean  @default(false)
+  sentAt        DateTime @default(now())
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([complaintId])
+  @@index([sentAt])
+  @@index([isRead])
+  @@index([recipientType, isRead, sentAt])
+  @@map("notifications")
+}
+
+// ----------------------------
+// Authentication is stateless (JWT only). No session store is used.
+// The previous express-session "AuthSession" model has been removed.
+// ----------------------------
+
+// ----------------------------
+// Password reset tokens
+// ----------------------------
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ----------------------------
+// Atomic counters for generating sequential numbers
+// (e.g. complaint numbers per year). The unique(name) constraint plus
+// Prisma upsert (INSERT .. ON CONFLICT DO UPDATE) guarantees a race-free
+// increment under concurrent load.
+// ----------------------------
+model SequenceCounter {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  current   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("sequence_counters")
+}
