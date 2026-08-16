@@ -11,19 +11,11 @@ import { categoryLabel } from "@/lib/lookups";
 const STATUS_STYLES = {
   NEW: "border-blue-500 bg-blue-50 text-blue-700",
   ACKNOWLEDGED: "border-indigo-500 bg-indigo-50 text-indigo-700",
-  IN_PROGRESS: "border-amber-500 bg-amber-50 text-amber-700",
-  ESCALATED: "border-red-500 bg-red-50 text-red-700",
-  RESOLVED: "border-emerald-500 bg-emerald-50 text-emerald-700",
-  CLOSED: "border-gray-400 bg-gray-50 text-gray-600",
 };
 
 const STATUS_LABELS = {
   NEW: "New",
   ACKNOWLEDGED: "Acknowledged",
-  IN_PROGRESS: "In Progress",
-  ESCALATED: "Escalated",
-  RESOLVED: "Resolved",
-  CLOSED: "Closed",
 };
 
 function StatusPill({ status }) {
@@ -132,9 +124,8 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const inProgress = complaints.filter((c) => c.status === "IN_PROGRESS").length;
-  const resolved = complaints.filter((c) => c.status === "RESOLVED").length;
-  const closed = complaints.filter((c) => c.status === "CLOSED").length;
+  const newCount = complaints.filter((c) => c.status === "NEW").length;
+  const acknowledgedCount = complaints.filter((c) => c.status === "ACKNOWLEDGED").length;
   const recentComplaints = complaints.slice(0, 5);
 
   const stats = [
@@ -146,25 +137,18 @@ export default function DashboardPage() {
       icon: <DocumentIcon className="h-8 w-8 text-primary" />,
     },
     {
-      label: "In Progress",
-      count: inProgress,
+      label: "New",
+      count: newCount,
       color: "text-amber-600",
       bgColor: "bg-amber-50",
       icon: <ClockIcon className="h-8 w-8 text-amber-500" />,
     },
     {
-      label: "Resolved",
-      count: resolved,
+      label: "Acknowledged",
+      count: acknowledgedCount,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       icon: <CheckIcon className="h-8 w-8 text-emerald-500" />,
-    },
-    {
-      label: "Closed",
-      count: closed,
-      color: "text-gray-600",
-      bgColor: "bg-gray-100",
-      icon: <ArchiveIcon className="h-8 w-8 text-gray-500" />,
     },
   ];
 

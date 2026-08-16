@@ -17,6 +17,7 @@ export function mapComplaintToQueueItem(c: Complaint): QueueItemEntity {
     priorityLevel: c.priorityLevel,
     technicianName: c.technicianName,
     dispatchTime: c.dispatchTime,
+    responseTimeSeconds: c.responseTimeSeconds,
     assignedToId: c.assignedToId,
     timerExpiresAt: c.timerExpiresAt,
   };

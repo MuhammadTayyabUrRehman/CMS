@@ -88,6 +88,18 @@ export class ComplaintsService {
         tx,
       );
 
+      if (complaint.rank >= 20) {
+        await this.notificationsService.createNotification(
+          {
+            complaintId: complaint.id,
+            recipientType: 'IT_STAFF',
+            type: 'VVIP_ALERT',
+            message: `Complaint #${complaint.complaintNumber} — Submitted by a VVIP`,
+          },
+          tx,
+        );
+      }
+
       return {
         complaintId: complaint.id,
         complaintNumber: complaint.complaintNumber,
@@ -327,12 +339,8 @@ export class ComplaintsService {
 
   private isTransitionAllowed(currentStatus: Status, nextStatus: Status): boolean {
     const allowedTransitions: Record<Status, Status[]> = {
-      NEW: [Status.ACKNOWLEDGED, Status.ESCALATED],
-      ACKNOWLEDGED: [Status.IN_PROGRESS, Status.ESCALATED],
-      IN_PROGRESS: [Status.RESOLVED, Status.ESCALATED],
-      ESCALATED: [Status.IN_PROGRESS, Status.RESOLVED],
-      RESOLVED: [Status.CLOSED],
-      CLOSED: [],
+      NEW: [Status.ACKNOWLEDGED],
+      ACKNOWLEDGED: [],
     };
 
     return allowedTransitions[currentStatus]?.includes(nextStatus) ?? false;
@@ -342,27 +350,19 @@ export class ComplaintsService {
     const comments: Record<Status, string> = {
       NEW: 'Complaint created.',
       ACKNOWLEDGED: 'Complaint acknowledged.',
-      IN_PROGRESS: 'Complaint moved to in progress.',
-      ESCALATED: 'Complaint escalated.',
-      RESOLVED: 'Complaint resolved.',
-      CLOSED: 'Complaint closed.',
     };
 
     return comments[status];
   }
 
   private getNotificationRecipient(status: Status): string {
-    return status === Status.ESCALATED ? 'IT_STAFF' : 'COMPLAINANT';
+    return status === Status.NEW ? 'IT_STAFF' : 'COMPLAINANT';
   }
 
   private getNotificationMessage(complaintNumber: string, status: Status): string {
     const messages: Record<Status, string> = {
       NEW: `Complaint ${complaintNumber} is now new.`,
       ACKNOWLEDGED: `Complaint ${complaintNumber} has been acknowledged.`,
-      IN_PROGRESS: `Complaint ${complaintNumber} is now in progress.`,
-      ESCALATED: `Complaint ${complaintNumber} has been escalated.`,
-      RESOLVED: `Complaint ${complaintNumber} has been resolved.`,
-      CLOSED: `Complaint ${complaintNumber} has been closed.`,
     };
 
     return messages[status];

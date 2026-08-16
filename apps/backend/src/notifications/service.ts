@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import { NotificationEntity } from './entities/notification.entity';
 import { mapNotificationToEntity } from './mapper';
 import { NotificationsRepository } from './repository';
@@ -13,6 +13,7 @@ export class NotificationsService {
       complaintId: string;
       recipientType: string;
       message: string;
+      type?: NotificationType;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<NotificationEntity> {
@@ -48,6 +49,15 @@ export class NotificationsService {
     );
   }
 
+  async listUnreadVvipAlerts(): Promise<NotificationEntity[]> {
+    const notifications = await this.notificationsRepository.findUnreadVvipAlerts();
+    return notifications.map((notification) =>
+      mapNotificationToEntity(
+        notification as unknown as Parameters<typeof mapNotificationToEntity>[0],
+      ),
+    );
+  }
+
   async listUnreadForComplainant(userId: string): Promise<NotificationEntity[]> {
     const notifications = await this.notificationsRepository.findUnreadForComplainant(userId);
     return notifications.map((notification) =>
@@ -65,6 +75,15 @@ export class NotificationsService {
     return mapNotificationToEntity(
       notification as unknown as Parameters<typeof mapNotificationToEntity>[0],
     );
+  }
+
+  async markVvipAlertAsRead(notificationId: string): Promise<NotificationEntity | null> {
+    const notification = await this.notificationsRepository.markRead(notificationId, 'VVIP_ALERT');
+    return notification
+      ? mapNotificationToEntity(
+          notification as unknown as Parameters<typeof mapNotificationToEntity>[0],
+        )
+      : null;
   }
 
 

@@ -38,10 +38,6 @@ const CONTACT_METHOD_LABELS = {
 const STATUS_LABELS = {
   NEW: "New",
   ACKNOWLEDGED: "Acknowledged",
-  IN_PROGRESS: "In Progress",
-  ESCALATED: "Escalated",
-  RESOLVED: "Resolved",
-  CLOSED: "Closed",
 };
 
 // backend gap: no public /api/lookup/departments endpoint — using local constant.
@@ -63,10 +59,6 @@ const DEPARTMENT_LABELS = {
 const STATUS_STYLES = {
   NEW: "border-gray-300 bg-gray-100 text-gray-700",
   ACKNOWLEDGED: "border-amber-300 bg-amber-50 text-amber-800",
-  IN_PROGRESS: "border-primary-300 bg-primary-50 text-primary-700",
-  ESCALATED: "border-alert/40 bg-alert-50 text-alert-dark",
-  RESOLVED: "border-emerald-300 bg-emerald-100 text-emerald-800",
-  CLOSED: "border-gray-400 bg-gray-200 text-gray-600",
 };
 
 let ranksCache = RANKS;
@@ -150,7 +142,7 @@ export function departmentLabel(value) {
 // passed. Field is present on /complaints/mine* and /employee/queue responses.
 export function isComplaintOverdue(complaint) {
   if (!complaint || !complaint.timerExpiresAt) return false;
-  if (complaint.status === "RESOLVED" || complaint.status === "CLOSED") return false;
+  if (complaint.status === "ACKNOWLEDGED") return false;
   return new Date(complaint.timerExpiresAt) < new Date();
 }
 

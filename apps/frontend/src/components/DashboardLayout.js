@@ -74,7 +74,6 @@ const navItems = [
   { label: "Submit Complaint", href: "/dashboard/submit-complaint", icon: SubmitComplaintIcon },
   { label: "Knowledge Base", href: "/dashboard/knowledge-base", icon: KnowledgeBaseIcon },
   { label: "Profile", href: "/dashboard/profile", icon: ProfileIcon },
-  { label: "Change Password", href: "/dashboard/change-password", icon: ChangePasswordIcon },
   { label: "Logout", href: "/login", icon: LogoutIcon },
 ];
 
@@ -162,9 +161,6 @@ export default function DashboardLayout({ children }) {
                 <div className="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-gray-100 bg-white py-1 text-foreground shadow-xl">
                   <Link href="/dashboard/profile" className="block px-4 py-2.5 text-sm hover:bg-primary-50 transition-colors">
                     Profile
-                  </Link>
-                  <Link href="/dashboard/change-password" className="block px-4 py-2.5 text-sm hover:bg-primary-50 transition-colors">
-                    Change Password
                   </Link>
                   <hr className="my-1 border-gray-100" />
                   <Link href="/login" onClick={clearToken} className="block px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">

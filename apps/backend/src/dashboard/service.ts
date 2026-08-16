@@ -4,7 +4,7 @@ import { DashboardRepository } from './repository';
 import { DashboardSummaryEntity } from './entities/dashboard-summary.entity';
 import { StaffPerformanceEntity } from './entities/staff-performance.entity';
 import {
-  ResolvedEscalatedEntity,
+  NewAcknowledgedEntity,
   TrendBucketEntity,
   TrendEntity,
 } from './entities/trend.entity';
@@ -37,7 +37,7 @@ export class DashboardService {
     ]);
 
     const countsByStatus = { ...countsByStatusRaw } as Record<string, number>;
-    ['NEW', 'ACKNOWLEDGED', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED', 'CLOSED'].forEach((s) => {
+    ['NEW', 'ACKNOWLEDGED'].forEach((s) => {
       if (!countsByStatus[s]) countsByStatus[s] = 0;
     });
 
@@ -45,29 +45,18 @@ export class DashboardService {
       ? await this.repo.countVipByRankThreshold(rankThreshold)
       : 0;
 
-    // Average response time (submittedAt -> first ACKNOWLEDGED/IN_PROGRESS) and
-    // average resolution time (submittedAt -> first RESOLVED).
-    const [earliestResponses, earliestResolved] = await Promise.all([
-      this.repo.earliestResponsePerComplaint(),
-      this.repo.earliestResolvedPerComplaint(),
-    ]);
+    // Dispatch/acknowledgement freezes the final response time.
+    const earliestResponses = await this.repo.earliestResponsePerComplaint();
 
     const responseIds = earliestResponses.map((r) => r.complaintId);
-    const resolvedIds = earliestResolved.map((r) => r.complaintId);
-    const [responseComplaints, resolvedComplaints] = await Promise.all([
-      responseIds.length ? this.repo.findComplaintsByIds(responseIds) : Promise.resolve([]),
-      resolvedIds.length ? this.repo.findComplaintsByIds(resolvedIds) : Promise.resolve([]),
-    ]);
+    const responseComplaints = responseIds.length
+      ? await this.repo.findComplaintsByIds(responseIds)
+      : [];
 
     const averageResponseTimeSeconds = this.averageSeconds(
       earliestResponses,
       responseComplaints,
       (r) => r.respondedAt,
-    );
-    const averageResolutionTimeSeconds = this.averageSeconds(
-      earliestResolved,
-      resolvedComplaints,
-      (r) => r.resolvedAt,
     );
 
     return {
@@ -76,13 +65,12 @@ export class DashboardService {
       countsByStatus: countsByStatus as DashboardSummaryEntity['countsByStatus'],
       vipComplaints,
       averageResponseTimeSeconds,
-      averageResolutionTimeSeconds,
       complaintsByCategory,
     };
   }
 
   private averageSeconds(
-    rows: Array<{ complaintId: string; respondedAt?: Date | null; resolvedAt?: Date | null }>,
+    rows: Array<{ complaintId: string; respondedAt?: Date | null }>,
     complaints: Array<{ id: string; submittedAt: Date }>,
     pick: (row: (typeof rows)[number]) => Date | null | undefined,
   ): number | null {
@@ -100,27 +88,25 @@ export class DashboardService {
     return diffs.reduce((a, b) => a + b, 0) / diffs.length;
   }
 
-  async getStaffPerformance(): Promise<StaffPerformanceEntity[]> {    const [staff, assignedGrouped, resolvedGrouped, escalatedGrouped, resolvedDetails] =
+  async getStaffPerformance(): Promise<StaffPerformanceEntity[]> {    const [staff, assignedGrouped, acknowledgedGrouped, acknowledgedDetails] =
       await Promise.all([
         this.repo.findStaff(),
         this.repo.countAssignedGrouped(),
-        this.repo.countResolvedGrouped(),
-        this.repo.countEscalatedGrouped(),
-        this.repo.resolvedUpdatesDetailed(),
+        this.repo.countAcknowledgedGrouped(),
+        this.repo.acknowledgedUpdatesDetailed(),
       ]);
 
-    const complaintIds = Array.from(new Set(resolvedDetails.map((d) => d.complaintId)));
+    const complaintIds = Array.from(new Set(acknowledgedDetails.map((d) => d.complaintId)));
     const complaints = complaintIds.length
       ? await this.repo.findComplaintsByIds(complaintIds)
       : [];
     const submittedById = new Map(complaints.map((c) => [c.id, c.submittedAt]));
 
     const assignedMap = new Map(assignedGrouped.map((r) => [r.assignedToId as string, r._count.id]));
-    const resolvedMap = new Map(resolvedGrouped.map((r) => [r.handledById as string, r._count.id]));
-    const escalatedMap = new Map(escalatedGrouped.map((r) => [r.handledById as string, r._count.id]));
+    const acknowledgedMap = new Map(acknowledgedGrouped.map((r) => [r.handledById as string, r._count.id]));
 
     const completionMap = new Map<string, number[]>();
-    for (const d of resolvedDetails) {
+    for (const d of acknowledgedDetails) {
       if (!d.handledById) continue;
       const submittedAt = submittedById.get(d.complaintId);
       if (!submittedAt) continue;
@@ -131,9 +117,9 @@ export class DashboardService {
     }
 
     return staff.map((s) => {
-      const resolvedArr = completionMap.get(s.id) ?? [];
-      const averageCompletionSeconds = resolvedArr.length
-        ? resolvedArr.reduce((a, b) => a + b, 0) / resolvedArr.length
+      const acknowledgedArr = completionMap.get(s.id) ?? [];
+      const averageAcknowledgementSeconds = acknowledgedArr.length
+        ? acknowledgedArr.reduce((a, b) => a + b, 0) / acknowledgedArr.length
         : null;
       const currentWorkload = assignedMap.get(s.id) ?? 0;
 
@@ -141,9 +127,8 @@ export class DashboardService {
         id: s.id,
         fullName: s.fullName,
         assigned: currentWorkload,
-        resolved: resolvedMap.get(s.id) ?? 0,
-        escalated: escalatedMap.get(s.id) ?? 0,
-        averageCompletionSeconds,
+        acknowledged: acknowledgedMap.get(s.id) ?? 0,
+        averageAcknowledgementSeconds,
         currentWorkload,
       };
     });
@@ -165,14 +150,14 @@ export class DashboardService {
     return { period, buckets };
   }
 
-  async getResolvedEscalatedTrend(period: TrendPeriod): Promise<ResolvedEscalatedEntity> {
+  async getNewAcknowledgedTrend(period: TrendPeriod): Promise<NewAcknowledgedEntity> {
     const { unit, start, count } = getBucketWindow(period);
-    const [resolvedRows, escalatedRows] = await Promise.all([
-      this.repo.countComplaintsByTimeBucket(unit, start, [Status.RESOLVED]),
-      this.repo.countComplaintsByTimeBucket(unit, start, [Status.ESCALATED]),
+    const [newRows, acknowledgedRows] = await Promise.all([
+      this.repo.countComplaintsByTimeBucket(unit, start, [Status.NEW]),
+      this.repo.countComplaintsByTimeBucket(unit, start, [Status.ACKNOWLEDGED]),
     ]);
-    const resolvedMap = new Map(resolvedRows.map((r) => [r.bucket.getTime(), r.count]));
-    const escalatedMap = new Map(escalatedRows.map((r) => [r.bucket.getTime(), r.count]));
+    const newMap = new Map(newRows.map((r) => [r.bucket.getTime(), r.count]));
+    const acknowledgedMap = new Map(acknowledgedRows.map((r) => [r.bucket.getTime(), r.count]));
     const buckets = [];
     for (let i = 0; i < count; i++) {
       const bucket = addToBucket(start, unit, i);
@@ -180,8 +165,8 @@ export class DashboardService {
       buckets.push({
         bucket: bucket.toISOString(),
         label: formatBucketLabel(bucket, unit),
-        resolved: resolvedMap.get(ts) ?? 0,
-        escalated: escalatedMap.get(ts) ?? 0,
+        new: newMap.get(ts) ?? 0,
+        acknowledged: acknowledgedMap.get(ts) ?? 0,
       });
     }
     return { period, buckets };

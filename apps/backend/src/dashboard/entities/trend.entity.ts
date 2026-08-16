@@ -11,14 +11,14 @@ export interface TrendEntity {
   buckets: TrendBucketEntity[];
 }
 
-export interface ResolvedEscalatedBucketEntity {
+export interface NewAcknowledgedBucketEntity {
   bucket: string;
   label: string;
-  resolved: number;
-  escalated: number;
+  new: number;
+  acknowledged: number;
 }
 
-export interface ResolvedEscalatedEntity {
+export interface NewAcknowledgedEntity {
   period: TrendPeriod;
-  buckets: ResolvedEscalatedBucketEntity[];
+  buckets: NewAcknowledgedBucketEntity[];
 }

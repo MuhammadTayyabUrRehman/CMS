@@ -26,7 +26,6 @@ import { HistoryModule }       from './history/module';
 import { LookupModule }        from './lookup/module';
 import { NotificationsModule } from './notifications/module';
 import { QueueModule }         from './queue/module';
-import { SchedulerModule }     from './scheduler/module';
 import { SharedModule }        from './shared/module';
 import { UsersModule }         from './users/module';
 
@@ -59,7 +58,6 @@ import { UsersModule }         from './users/module';
     LookupModule,         // Lookup/dropdown data
     NotificationsModule,  // Notifications
     QueueModule,          // Job queue
-    SchedulerModule,      // Scheduled tasks
     SharedModule,         // Shared resources
     UsersModule,          // User management
   ],

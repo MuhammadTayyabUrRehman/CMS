@@ -49,6 +49,25 @@ export class NotificationsController {
   }
 
   @Roles(Role.IT_STAFF, Role.ADMIN)
+  @Get('vvip-alerts')
+  async listVvipAlerts(): Promise<unknown> {
+    const notifications = await this.notificationsService.listUnreadVvipAlerts();
+    return {
+      success: true,
+      message: 'Unread VVIP alerts retrieved successfully.',
+      data: notifications,
+    };
+  }
+
+  @Roles(Role.IT_STAFF, Role.ADMIN)
+  @Patch('vvip-alerts/:id/read')
+  async markVvipAlertAsRead(@Param('id') id: string): Promise<unknown> {
+    const notification = await this.notificationsService.markVvipAlertAsRead(id);
+    if (!notification) throw new NotFoundException('Unread VVIP alert not found.');
+    return { success: true, message: 'VVIP alert marked as read.', data: notification };
+  }
+
+  @Roles(Role.IT_STAFF, Role.ADMIN)
   @Get('complaints/:complaintId')
   async getComplaintNotifications(@Param('complaintId') complaintId: string): Promise<unknown> {
     const notifications = await this.notificationsService.getNotificationsForComplaint(complaintId);

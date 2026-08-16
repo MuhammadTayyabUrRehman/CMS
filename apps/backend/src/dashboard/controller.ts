@@ -32,13 +32,13 @@ export class DashboardController {
   }
 
   @Roles(Role.ADMIN)
-  @Get('resolved-escalated')
-  async getResolvedEscalatedTrend(@Query() query: TrendPeriodDto) {
+  @Get('new-acknowledged')
+  async getNewAcknowledgedTrend(@Query() query: TrendPeriodDto) {
     const period = query.period ?? TrendPeriod.LAST_7_DAYS;
-    const data = await this.dashboardService.getResolvedEscalatedTrend(period);
+    const data = await this.dashboardService.getNewAcknowledgedTrend(period);
     return {
       success: true,
-      message: 'Resolved vs escalated trend retrieved successfully.',
+      message: 'New vs acknowledged trend retrieved successfully.',
       data,
     };
   }
@@ -54,4 +54,3 @@ export class DashboardController {
     };
   }
 }
-

@@ -73,22 +73,13 @@ export class DashboardRepository {
   }
 
   async earliestResponsePerComplaint() {
-    // earliest update where status ACKNOWLEDGED or IN_PROGRESS
+    // Dispatch is the single acknowledgement/completion event.
     const rows = await this.prisma.complaintUpdate.groupBy({
       by: ['complaintId'],
-      where: { status: { in: ['ACKNOWLEDGED', 'IN_PROGRESS'] } },
+      where: { status: 'ACKNOWLEDGED' },
       _min: { updateDate: true },
     });
     return rows.map((r) => ({ complaintId: r.complaintId, respondedAt: r._min.updateDate }));
-  }
-
-  async earliestResolvedPerComplaint() {
-    const rows = await this.prisma.complaintUpdate.groupBy({
-      by: ['complaintId'],
-      where: { status: 'RESOLVED' },
-      _min: { updateDate: true },
-    });
-    return rows.map((r) => ({ complaintId: r.complaintId, resolvedAt: r._min.updateDate }));
   }
 
   async findComplaintsByIds(ids: string[]) {
@@ -100,36 +91,27 @@ export class DashboardRepository {
   }
 
   async countAssignedGrouped() {
-    // grouped by assignedToId where status is ACKNOWLEDGED or IN_PROGRESS
+    // Acknowledged complaints are completed work in the simplified workflow.
     const rows = await this.prisma.complaint.groupBy({
       by: ['assignedToId'],
-      where: { assignedToId: { not: null }, status: { in: ['ACKNOWLEDGED', 'IN_PROGRESS'] } },
+      where: { assignedToId: { not: null }, status: 'ACKNOWLEDGED' },
       _count: { id: true },
     });
     return rows as Array<{ assignedToId: string | null; _count: { id: number } }>;
   }
 
-  async countResolvedGrouped() {
+  async countAcknowledgedGrouped() {
     const rows = await this.prisma.complaintUpdate.groupBy({
       by: ['handledById'],
-      where: { status: 'RESOLVED', handledById: { not: null } },
+      where: { status: 'ACKNOWLEDGED', handledById: { not: null } },
       _count: { id: true },
     });
     return rows as Array<{ handledById: string | null; _count: { id: number } }>;
   }
 
-  async countEscalatedGrouped() {
-    const rows = await this.prisma.complaintUpdate.groupBy({
-      by: ['handledById'],
-      where: { status: 'ESCALATED', handledById: { not: null } },
-      _count: { id: true },
-    });
-    return rows as Array<{ handledById: string | null; _count: { id: number } }>;
-  }
-
-  async resolvedUpdatesDetailed() {
+  async acknowledgedUpdatesDetailed() {
     return this.prisma.complaintUpdate.findMany({
-      where: { status: 'RESOLVED', handledById: { not: null } },
+      where: { status: 'ACKNOWLEDGED', handledById: { not: null } },
       select: { complaintId: true, handledById: true, updateDate: true },
     });
   }

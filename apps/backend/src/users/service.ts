@@ -13,7 +13,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserActivityEntity } from './entities/activity.entity';
 import { toUserResponseDto } from './mapper';
 
-const ALL_STATUSES: Status[] = ['NEW', 'ACKNOWLEDGED', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED', 'CLOSED'];
+const ALL_STATUSES: Status[] = ['NEW', 'ACKNOWLEDGED'];
 
 @Injectable()
 export class UsersService {

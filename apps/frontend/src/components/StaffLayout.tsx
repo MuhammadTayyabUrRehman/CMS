@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import NotificationsBell from "@/components/NotificationsBell";
+import VvipAlerts from "@/components/VvipAlerts";
 import { clearToken } from "@/lib/api";
 import { useAuthGuard } from "@/lib/auth";
 
@@ -101,6 +102,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             {/* Notifications */}
             <NotificationsBell />
+            <VvipAlerts />
 
             {/* User dropdown */}
           <div className="relative">

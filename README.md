@@ -23,12 +23,12 @@ A Ministry of Finance complaint portal built as a single **npm-workspaces monore
 
 ```
 CMS - Integrated front with backend/
-├── package.json          # workspace root: scripts delegate to apps/*
-├── package-lock.json
 ├── AGENTS.md            # source-of-truth rules & business context
 ├── .gitignore
 ├── README.md            # this file
 └── apps/
+    ├── package.json     # npm workspace root
+    ├── package-lock.json
     ├── backend/         # NestJS API  (port 3001)
     └── frontend/        # Next.js UI  (port 3000)
 ```
@@ -63,14 +63,14 @@ server started
 
 ---
 
-## 2. Install dependencies (from the repo root)
+## 2. Install dependencies (from the apps workspace root)
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
 npm install
 ```
 
-This installs **both** `apps/backend` and `apps/frontend` via npm workspaces and creates a hoisted root `node_modules`.
+This installs both `backend` and `frontend` via npm workspaces and creates the shared `apps/node_modules`.
 
 ---
 
@@ -99,19 +99,19 @@ NEXT_PUBLIC_API_URL="/api"
 
 ## 4. Run database migrations
 
-From the **repo root**:
+From the **apps workspace root**:
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
 npm run prisma:generate
-npm run prisma:migrate --workspace=apps/backend
+npm run prisma:migrate
 ```
 
 `prisma:migrate` runs `prisma migrate dev` — applies pending migrations, updates the DB schema, and regenerates the Prisma client.
 
 > Equivalent one-liner via the root workspace script:
 > ```bat
-> npm run prisma:generate && npm run prisma:migrate --workspace=apps/backend
+> npm run prisma:generate && npm run prisma:migrate
 > ```
 
 ---
@@ -120,10 +120,10 @@ npm run prisma:migrate --workspace=apps/backend
 
 Creates the first admin (and optionally IT staff) account. bcrypt-hashed (cost 12).
 
-From the **repo root**:
+From the **apps workspace root**:
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
 npm run seed
 ```
 
@@ -158,18 +158,18 @@ npm run start:dev
 
 This starts the API on **http://localhost:3001** with `--watch` (auto-restarts on file changes).
 
-### Option B — from the repo root (workspace)
+### Option B — from the apps workspace root
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
-npm run start:dev --workspace=apps/backend
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
+npm run start:dev --workspace=backend
 ```
 
 ### Production build
 
 ```bat
-npm run build --workspace=apps/backend
-npm run start:prod --workspace=apps/backend
+npm run build --workspace=backend
+npm run start:prod --workspace=backend
 ```
 
 ---
@@ -187,50 +187,50 @@ npm run dev
 
 This starts the Next.js dev server on **http://localhost:3000**.
 
-### Option B — from the repo root (workspace)
+### Option B — from the apps workspace root
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
-npm run dev --workspace=apps/frontend
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
+npm run dev --workspace=frontend
 ```
 
 ### Production build
 
 ```bat
-npm run build --workspace=apps/frontend
-npm run start --workspace=apps/frontend
+npm run build --workspace=frontend
+npm run start --workspace=frontend
 ```
 
 ---
 
-## 8. Start both at once (from the repo root)
+## 8. Start both at once (from the apps workspace root)
 
 ```bat
-cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend"
+cd "C:\Local Disk (D)\reports finance\CMS - Integrated front with backend\apps"
 npm run dev
 ```
 
-This runs the backend (`start:dev`) and the frontend (`next dev`) — typically in two terminals/concurrently. The backend listens on **3001** and the frontend on **3000**.
+This uses `concurrently` to run the backend (`start:dev`) and frontend (`next dev`) in one terminal. The backend listens on **3001** and the frontend on **3000**.
 
 ---
 
 ## Quick command reference
 
-| Command (run from repo root unless noted)                                              | What it does                                  |
+| Command (run from `apps` unless noted)                                                | What it does                                  |
 |----------------------------------------------------------------------------------------|-----------------------------------------------|
 | `npm install`                                                                          | Install all dependencies (root + workspaces)  |
 | `npm run dev`                                                                          | Start backend + frontend (dev, both)          |
-| `npm run dev --workspace=apps/backend`                                                | Start backend only                            |
-| `npm run dev --workspace=apps/frontend`                                               | Start frontend only                           |
+| `npm run start:dev --workspace=backend`                                               | Start backend only                            |
+| `npm run dev --workspace=frontend`                                                    | Start frontend only                           |
 | `npm run build`                                                                        | Build both apps                               |
 | `npm run lint`                                                                         | Lint both apps                                |
 | `npm run prisma:generate`                                                              | Regenerate the Prisma client                  |
-| `npm run prisma:migrate --workspace=apps/backend`                                     | Apply DB migrations (dev)                     |
-| `npm run prisma:deploy --workspace=apps/backend`                                      | Apply DB migrations (prod)                    |
+| `npm run prisma:migrate`                                                              | Apply DB migrations (dev)                     |
+| `npm run prisma:deploy`                                                               | Apply DB migrations (prod)                    |
 | `npm run seed`                                                                         | Seed the database (admin + staff accounts)    |
-| `npm run start:prod --workspace=apps/backend`                                         | Start backend in production mode              |
-| `npm run start --workspace=apps/frontend`                                             | Start frontend in production mode             |
-| `npm run prisma:studio --workspace=apps/backend`                                      | Open Prisma Studio (DB GUI)                   |
+| `npm run start:prod --workspace=backend`                                              | Start backend in production mode              |
+| `npm run start --workspace=frontend`                                                  | Start frontend in production mode             |
+| `npm run prisma:studio --workspace=backend`                                           | Open Prisma Studio (DB GUI)                   |
 
 ### Direct-from-folder equivalents (cd first)
 

@@ -24,22 +24,29 @@ export class AssignmentService {
       throw new NotFoundException('Complaint not found.');
     }
 
-    if (complaint.status === Status.RESOLVED || complaint.status === Status.CLOSED) {
-      throw new UnprocessableEntityException('Complaint cannot be assigned after resolution.');
+    if (complaint.status !== Status.NEW) {
+      throw new UnprocessableEntityException('Only new complaints can be dispatched.');
     }
 
     const actor = await this.usersRepository.findById(actorId);
+    const acknowledgedAt = new Date();
+    const responseTimeSeconds = Math.max(
+      0,
+      Math.floor((acknowledgedAt.getTime() - complaint.submittedAt.getTime()) / 1000),
+    );
 
     const assignment = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.complaint.updateMany({
         where: {
           id: complaintId,
           assignedToId: null,
+          status: Status.NEW,
         },
         data: {
           assignedToId: actorId,
           technicianName: dto.technicianName,
-          dispatchTime: new Date(),
+          dispatchTime: acknowledgedAt,
+          responseTimeSeconds,
           status: Status.ACKNOWLEDGED,
           updatedAt: new Date(),
         },
@@ -73,7 +80,7 @@ export class AssignmentService {
       return {
         complaintId,
         technicianName: dto.technicianName,
-        dispatchTime: new Date(),
+        dispatchTime: acknowledgedAt,
         handledBy: {
           id: actorId,
           fullName: actor?.fullName ?? 'Assigned handler',

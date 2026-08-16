@@ -44,7 +44,7 @@ function formatDate(iso) {
   });
 }
 
-const STATUS_ORDER = ["NEW", "ACKNOWLEDGED", "IN_PROGRESS", "ESCALATED", "RESOLVED", "CLOSED"];
+const STATUS_ORDER = ["NEW", "ACKNOWLEDGED"];
 
 /* ────────────────── Activity Modal ────────────────── */
 
@@ -201,6 +201,11 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const effectivePage = Math.min(currentPage, totalPages);
+  const pagedUsers = users.slice((effectivePage - 1) * pageSize, effectivePage * pageSize);
 
   const loadUsers = useCallback(async (role) => {
     const qs = role ? `?role=${role}` : "";
@@ -270,7 +275,10 @@ export default function AdminUsersPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-muted">Filter</span>
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
             >
               {ROLE_FILTERS.map((f) => (
@@ -344,7 +352,7 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {users.length > 0 ? (
-                  users.map((user) => (
+                  pagedUsers.map((user) => (
                     <tr key={user.id} className="transition-colors hover:bg-primary-50/40">
                       <td className="whitespace-nowrap px-6 py-4">
                         <span className="block font-bold text-foreground">{user.fullName}</span>
@@ -390,6 +398,15 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+          {users.length > pageSize && (
+            <div className="flex items-center justify-center gap-2 border-t border-gray-200 px-4 py-4">
+              <button type="button" disabled={effectivePage === 1} onClick={() => setCurrentPage(effectivePage - 1)} className="rounded border px-3 py-1.5 text-sm font-semibold disabled:opacity-40">Previous</button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button key={page} type="button" onClick={() => setCurrentPage(page)} className={`h-8 w-8 rounded text-sm font-bold ${page === effectivePage ? "bg-primary text-white" : "border hover:border-primary"}`}>{page}</button>
+              ))}
+              <button type="button" disabled={effectivePage === totalPages} onClick={() => setCurrentPage(effectivePage + 1)} className="rounded border px-3 py-1.5 text-sm font-semibold disabled:opacity-40">Next</button>
+            </div>
+          )}
         </div>
       )}
 

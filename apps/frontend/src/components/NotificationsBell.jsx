@@ -52,7 +52,7 @@ export default function NotificationsBell({
     };
   }, [complainant]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.length;
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -61,11 +61,7 @@ export default function NotificationsBell({
         {},
         { auth: true }
       );
-      setNotifications((prev) =>
-        complainant
-          ? prev.filter((n) => n.id !== id)
-          : prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch {
       // Keep unread state if the API call fails.
     }
@@ -93,7 +89,7 @@ export default function NotificationsBell({
           <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-lg border border-gray-100 bg-white text-foreground shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
               <span className="text-sm font-bold">Notifications</span>
-              <span className="text-xs text-muted">{notifications.length} total</span>
+              <span className="text-xs text-muted">{notifications.length} unread</span>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
@@ -104,9 +100,7 @@ export default function NotificationsBell({
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`flex flex-col gap-1 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-primary-50 ${
-                      n.isRead ? "opacity-60" : ""
-                    }`}
+                    className="flex flex-col gap-1 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-primary-50"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <Link
@@ -116,15 +110,13 @@ export default function NotificationsBell({
                       >
                         {n.message}
                       </Link>
-                      {!n.isRead && (
-                        <button
+                      <button
                           type="button"
                           onClick={() => handleMarkAsRead(n.id)}
                           className="shrink-0 text-xs font-bold text-primary hover:underline"
                         >
                           Mark read
                         </button>
-                      )}
                     </div>
                     <span className="text-xs text-muted">{formatDateTime(n.sentAt)}</span>
                   </div>

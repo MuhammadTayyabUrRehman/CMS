@@ -54,10 +54,11 @@ enum ContactMethod {
 enum Status {
   NEW
   ACKNOWLEDGED
-  IN_PROGRESS
-  ESCALATED
-  RESOLVED
-  CLOSED
+}
+
+enum NotificationType {
+  NORMAL
+  VVIP_ALERT
 }
 
 // ----------------------------
@@ -106,6 +107,7 @@ model Complaint {
   assignedToId    String?
   technicianName  String?       @db.VarChar(150)
   dispatchTime    DateTime?
+  responseTimeSeconds Int?
   submittedById   String?
   trackingToken   String?       @unique @db.VarChar(64)
 
@@ -155,6 +157,7 @@ model Notification {
   recipientType String   @db.VarChar(30)
   message       String   @db.Text
   isRead        Boolean  @default(false)
+  type          NotificationType @default(NORMAL)
   sentAt        DateTime @default(now())
 
   complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -163,6 +166,7 @@ model Notification {
   @@index([sentAt])
   @@index([isRead])
   @@index([recipientType, isRead, sentAt])
+  @@index([recipientType, type, isRead, sentAt])
   @@map("notifications")
 }
 

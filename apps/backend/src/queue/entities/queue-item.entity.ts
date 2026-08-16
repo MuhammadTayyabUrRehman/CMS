@@ -15,6 +15,7 @@ export interface QueueItemEntity {
   priorityLevel: number;
   technicianName: string | null;
   dispatchTime: Date | null;
+  responseTimeSeconds: number | null;
   assignedToId: string | null;
   timerExpiresAt: Date | null;
 }

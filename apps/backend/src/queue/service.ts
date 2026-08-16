@@ -20,7 +20,7 @@ export class QueueService {
       where.status = query.status as Status;
     } else {
       // Work queue defaults to actionable complaints only.
-      where.status = { notIn: [Status.RESOLVED, Status.CLOSED] };
+      where.status = Status.NEW;
     }
 
     if (query.category) {
@@ -78,6 +78,7 @@ export class QueueService {
       priorityLevel: true,
       technicianName: true,
       dispatchTime: true,
+      responseTimeSeconds: true,
       assignedToId: true,
       timerExpiresAt: true,
     } satisfies Prisma.ComplaintSelect;

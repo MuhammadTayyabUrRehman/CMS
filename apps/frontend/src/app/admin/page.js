@@ -34,7 +34,7 @@ const PERIODS = [
   { value: "yearly", label: "Yearly" },
 ];
 
-const STATUS_ORDER = ["NEW", "ACKNOWLEDGED", "IN_PROGRESS", "ESCALATED", "RESOLVED", "CLOSED"];
+const STATUS_ORDER = ["NEW", "ACKNOWLEDGED"];
 
 const CATEGORY_ORDER = ["SOFTWARE_HARDWARE", "INTERNET", "E_OFFICE", "OTHER"];
 
@@ -114,7 +114,7 @@ export default function AdminDashboardPage() {
   const [summary, setSummary] = useState(null);
   const [period, setPeriod] = useState("last7days");
   const [trends, setTrends] = useState({ buckets: [] });
-  const [resolvedEscalated, setResolvedEscalated] = useState({ buckets: [] });
+  const [newAcknowledged, setNewAcknowledged] = useState({ buckets: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -161,11 +161,11 @@ export default function AdminDashboardPage() {
       try {
         const [trendRes, reRes] = await Promise.all([
           api.get(`/admin/dashboard/trends?period=${period}`, { auth: true }),
-          api.get(`/admin/dashboard/resolved-escalated?period=${period}`, { auth: true }),
+          api.get(`/admin/dashboard/new-acknowledged?period=${period}`, { auth: true }),
         ]);
         if (cancelled) return;
         setTrends(trendRes.data || { buckets: [] });
-        setResolvedEscalated(reRes.data || { buckets: [] });
+        setNewAcknowledged(reRes.data || { buckets: [] });
         setError("");
         setLastUpdated(new Date());
       } catch (err) {
@@ -190,12 +190,12 @@ export default function AdminDashboardPage() {
     Promise.all([
       api.get("/admin/dashboard", { auth: true }),
       api.get(`/admin/dashboard/trends?period=${period}`, { auth: true }),
-      api.get(`/admin/dashboard/resolved-escalated?period=${period}`, { auth: true }),
+      api.get(`/admin/dashboard/new-acknowledged?period=${period}`, { auth: true }),
     ])
       .then(([summaryRes, trendRes, reRes]) => {
         setSummary(summaryRes.data);
         setTrends(trendRes.data || { buckets: [] });
-        setResolvedEscalated(reRes.data || { buckets: [] });
+        setNewAcknowledged(reRes.data || { buckets: [] });
         setError("");
         setLastUpdated(new Date());
       })
@@ -208,7 +208,6 @@ export default function AdminDashboardPage() {
     todaysComplaints: 0,
     vipComplaints: 0,
     averageResponseTimeSeconds: null,
-    averageResolutionTimeSeconds: null,
     countsByStatus: {},
     complaintsByCategory: {},
   };
@@ -330,13 +329,6 @@ export default function AdminDashboardPage() {
               color="text-blue-600"
               icon={IconResponse}
             />
-            <StatCard
-              label="Avg Resolution"
-              value={formatSeconds(summaryData.averageResolutionTimeSeconds)}
-              bgColor="bg-emerald-50"
-              color="text-emerald-600"
-              icon={IconResolution}
-            />
           </div>
 
           {/* ─── Charts Row ─── */}
@@ -365,17 +357,17 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Resolved vs Escalated Chart */}
+            {/* New vs Acknowledged Chart */}
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <div className="mb-4">
-                <h2 className="text-lg font-bold text-foreground">Resolved vs Escalated</h2>
+                <h2 className="text-lg font-bold text-foreground">New vs Acknowledged Complaints</h2>
                 <p className="text-xs text-muted">
-                  Complaint outcomes per {periodUnitLabel(resolvedEscalated.period)}.
+                  Complaint workflow counts per {periodUnitLabel(newAcknowledged.period)}.
                 </p>
               </div>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={resolvedEscalated.buckets} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                  <BarChart data={newAcknowledged.buckets} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray} vertical={false} />
                     <XAxis dataKey="label" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray }} />
                     <YAxis allowDecimals={false} tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} tickLine={false} axisLine={false} />
@@ -384,8 +376,8 @@ export default function AdminDashboardPage() {
                       contentStyle={{ borderRadius: 12, border: "1px solid #D1D5DB", fontSize: 12 }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="resolved" name="Resolved" fill={CHART_COLORS.emerald} radius={[4, 4, 0, 0]} maxBarSize={30} />
-                    <Bar dataKey="escalated" name="Escalated" fill={CHART_COLORS.alert} radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    <Bar dataKey="new" name="New" fill={CHART_COLORS.alert} radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    <Bar dataKey="acknowledged" name="Acknowledged" fill={CHART_COLORS.emerald} radius={[4, 4, 0, 0]} maxBarSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

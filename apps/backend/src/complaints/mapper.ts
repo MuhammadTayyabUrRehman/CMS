@@ -19,6 +19,7 @@ export function mapComplaintToEntity(complaint: Complaint): ComplaintEntity {
     priorityLevel: complaint.priorityLevel,
     technicianName: complaint.technicianName,
     dispatchTime: complaint.dispatchTime,
+    responseTimeSeconds: complaint.responseTimeSeconds,
     assignedToId: complaint.assignedToId,
   };
 }

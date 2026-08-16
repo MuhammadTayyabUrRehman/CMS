@@ -6,6 +6,5 @@ export interface DashboardSummaryEntity {
   countsByStatus: Record<Status | 'PENDING', number>;
   vipComplaints: number;
   averageResponseTimeSeconds: number | null;
-  averageResolutionTimeSeconds: number | null;
   complaintsByCategory: Record<string, number>;
 }
